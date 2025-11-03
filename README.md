@@ -1,6 +1,8 @@
 # Spatiotemporal-Drought-Identification
 These MATLAB codes are used to identify drought from a spatio-temporal perspective. This code was adapted from the following references and modified from the code provided by Xu et al. (2015a, b). If someone uses this code, please cite the Water paper and also the references listed below.
 
+The R code is used to calculate SZI.
+
 References:
 
 Andreadis, K.M.; Clark, E.A.; Wood, A.W.; Hamlet, A.F.; Lettenmaier, D.P. Twentieth-Century Drought in the Conterminous United States. Journal of Hydrometeorology 2005, 6, 985-1001. https://doi.org/10.1175/JHM450.1.
