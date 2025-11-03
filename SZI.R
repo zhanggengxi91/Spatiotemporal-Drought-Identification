@@ -1,0 +1,70 @@
+SZI = function(P, CAFEC, scale=6, distribution='EmpGrin'){
+  # P is monthly precipitation data
+  # CAFEC is monthly climatically precipitation data
+  library(drought)
+  library(flexsurv)
+  P = matrix(P, ncol = 1)
+  CAFEC = matrix(CAFEC, ncol = 1)
+  
+  if (length(P) != length(CAFEC) | length(P)%%12 != 0 | length(CAFEC)%%12 != 0){
+    stop('Plese check your data, \n
+         the data must be divided exactly by 12, \n
+         and the P and CAFEC must be the same length')
+  }
+  if (sum(is.na(P)) > 0 | sum(is.na(CAFEC)) > 0){
+    stop('Data must not contain NAs')
+  }
+  if (distribution != 'EmpGrin' & distribution != 'EmpWeib' &  
+      distribution != 'Gamma' & distribution != 'Lognormal' & 
+      distribution != 'Log-Logistic' & distribution != 'Normal'){
+    stop('Only enperical, Gamma, Lognormal, Log-Logistic, and Normal distributions are included
+         in the current version, other distributions will be updated soon')
+  }
+  D = P-CAFEC
+  D_scale = drought::ACCU(D, scale)
+  SI = matrix(NA, nrow = length(D)/12, ncol = 12, byrow = T)
+  SI_emp = matrix(NA, nrow = length(D)/12, ncol = 12, byrow = T)
+  for (tm in 1:12){
+    md = D_scale[,tm]
+    xd = md[(sum(is.na(md))+1):length(md)]
+    len = length(xd) - sum(is.na(xd))
+    if (distribution == 'EmpGrin'){
+      emp_cdf = UniEmp(xd, dist = 'Gringorten')
+      SI = stats::qnorm(emp_cdf)
+    }
+    else if (distribution == 'EmpWeib'){
+      emp_cdf = UniEmp(xd, dist = 'Weibull')
+      SI = stats::qnorm(emp_cdf)
+    }
+    else if (distribution == 'Gamma'){
+      par = MASS::fitdistr(xd, 'gamma')
+      gam_cdf = stats::pgamma(xd, par$estimate[1], par$estimate[2])
+      SI = stats::qnorm(gam_cdf)
+    }
+    else if (distribution == 'Lognormal'){
+      par = MASS::fitdistr(xd, 'lognormal')
+      log_cdf = stats::plnorm(xd, par$estimate[1], par$estimate[2])
+      SI = stats::qnorm(log_cdf)
+    }
+    else if (distribution == 'Log-Logistic'){
+      par = fitdistrplus::fitdist(xd, 'llogis')
+      llog_cdf = actuar::pllogis(xd, shape = par$estimate['shape'], scale = par$estimate['scale'])
+      SI = stats::qnorm(llog_cdf)
+    }
+    else if (distribution == 'Normal'){
+      par = fitdistrplus::fitdist(xd, distr = 'norm', method = 'mme')
+      normal_cdf = stats::pnorm(xd, par$estimate[1], par$estimate[2])
+      SI = stats::qnorm(normal_cdf)
+    }
+    if (sum(is.na(md)) > 0){
+      SI_emp[1:sum(is.na(md)),tm] = NA
+      SI_emp[(sum(is.na(md))+1):length(md),tm] = matrix(SI, ncol = 1)
+    }
+    else {
+      SI_emp[,tm] = matrix(SI, ncol = 1)
+    }
+  }
+  result = matrix(t(SI_emp), ncol = 1)
+}
+
+  
